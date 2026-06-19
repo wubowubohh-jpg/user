@@ -168,7 +168,9 @@ const onSubmit = async () => {
     form.account = ''
     alert.value = { level: 'success', message: t('personalCenter.common.saveSuccess') }
   } catch (err) {
-    alert.value = { level: 'error', message: t('personalCenter.common.saveFailed') }
+    // 透传后端细分错误（余额不足/币种不可用/账户冻结等），失败兜底通用文案。
+    const message = err instanceof Error && err.message ? err.message : t('personalCenter.common.saveFailed')
+    alert.value = { level: 'error', message }
   }
 }
 
