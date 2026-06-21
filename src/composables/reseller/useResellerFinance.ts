@@ -29,11 +29,15 @@ export const useResellerFinance = () => {
   const ledgerPagination = reactive({ page: 1, page_size: 20, total: 0, total_page: 1 })
   const withdrawsPagination = reactive({ page: 1, page_size: 20, total: 0, total_page: 1 })
 
+  // 各 load* 统一在内部兜底吞异常：避免在 onMounted / Promise.all 聚合处冒泡成未处理 rejection，
+  // 并防止单个区段请求失败拖垮整页加载；失败时对应区段降级为空，不影响其它区段。
   const loadDashboard = async () => {
     dashboardLoading.value = true
     try {
       const response = await resellerAPI.dashboard()
       dashboard.value = response.data.data || null
+    } catch {
+      dashboard.value = null
     } finally {
       dashboardLoading.value = false
     }
@@ -44,6 +48,8 @@ export const useResellerFinance = () => {
     try {
       const response = await resellerAPI.balanceAccounts(params)
       balances.value = response.data.data || []
+    } catch {
+      balances.value = []
     } finally {
       balanceLoading.value = false
     }
@@ -59,6 +65,8 @@ export const useResellerFinance = () => {
       })
       ledgerEntries.value = response.data.data || []
       Object.assign(ledgerPagination, response.data.pagination || ledgerPagination)
+    } catch {
+      ledgerEntries.value = []
     } finally {
       ledgerLoading.value = false
     }
@@ -74,6 +82,8 @@ export const useResellerFinance = () => {
       })
       withdraws.value = response.data.data || []
       Object.assign(withdrawsPagination, response.data.pagination || withdrawsPagination)
+    } catch {
+      withdraws.value = []
     } finally {
       withdrawsLoading.value = false
     }
@@ -83,7 +93,10 @@ export const useResellerFinance = () => {
     submittingWithdraw.value = true
     try {
       await resellerAPI.applyWithdraw(payload)
-      await Promise.all([loadDashboard(), loadBalances(), loadWithdraws({ page: 1 })])
+      // 提现申请已成功提交；后续刷新仅为同步展示，属尽力而为。
+      // 必须用 allSettled：若用 Promise.all，任一刷新请求的瞬时失败都会 reject 上抛，
+      // 被调用方误判为「提现失败」，诱导用户重复提交造成重复提现申请。
+      await Promise.allSettled([loadDashboard(), loadBalances(), loadWithdraws({ page: 1 })])
     } finally {
       submittingWithdraw.value = false
     }

@@ -737,6 +737,8 @@ const messages = {
                     resetSuccess: '规则已重置',
                     resetFailed: '重置规则失败',
                     loadFailed: '商品售价配置加载失败，请稍后重试',
+                    priceInvalidHint: '售价需不低于基准价与成本价',
+                    markupExceededHint: '超出最高加价比例',
                 },
                 settlementStatusMap: {
                     normal: '正常',
@@ -818,6 +820,7 @@ const messages = {
                     status: '状态',
                     createdAt: '申请时间',
                     processedAt: '处理时间',
+                    rejectReason: '拒绝原因',
                 },
                 errors: {
                     loadFailed: '分销财务数据加载失败，请稍后重试',
@@ -1219,6 +1222,8 @@ const messages = {
                 dateFrom: '起始日期',
                 dateTo: '结束日期',
                 noFilterResult: '未找到符合筛选条件的记录',
+                loadFailed: '数据加载失败，请稍后重试',
+                retry: '重试',
             },
             nav: {
                 backStore: '返回店铺',
@@ -2436,6 +2441,8 @@ const messages = {
                     resetSuccess: '規則已重置',
                     resetFailed: '重置規則失敗',
                     loadFailed: '商品售價配置載入失敗，請稍後重試',
+                    priceInvalidHint: '售價需不低於基準價與成本價',
+                    markupExceededHint: '超出最高加價比例',
                 },
                 settlementStatusMap: {
                     normal: '正常',
@@ -2517,6 +2524,7 @@ const messages = {
                     status: '狀態',
                     createdAt: '申請時間',
                     processedAt: '處理時間',
+                    rejectReason: '拒絕原因',
                 },
                 errors: {
                     loadFailed: '分銷財務資料載入失敗，請稍後重試',
@@ -2918,6 +2926,8 @@ const messages = {
                 dateFrom: '起始日期',
                 dateTo: '結束日期',
                 noFilterResult: '未找到符合篩選條件的記錄',
+                loadFailed: '資料載入失敗，請稍後重試',
+                retry: '重試',
             },
             nav: {
                 backStore: '返回店鋪',
@@ -4089,6 +4099,8 @@ const messages = {
                     resetSuccess: 'Rule reset',
                     resetFailed: 'Failed to reset rule',
                     loadFailed: 'Failed to load product pricing, please try again later',
+                    priceInvalidHint: 'Price must be at least the base and cost price',
+                    markupExceededHint: 'Exceeds the maximum markup',
                 },
                 settlementStatusMap: {
                     normal: 'Normal',
@@ -4170,6 +4182,7 @@ const messages = {
                     status: 'Status',
                     createdAt: 'Created At',
                     processedAt: 'Processed At',
+                    rejectReason: 'Reject Reason',
                 },
                 errors: {
                     loadFailed: 'Failed to load reseller finance data, please try again later',
@@ -4571,6 +4584,8 @@ const messages = {
                 dateFrom: 'From',
                 dateTo: 'To',
                 noFilterResult: 'No records match the filters',
+                loadFailed: 'Failed to load data. Please try again later.',
+                retry: 'Retry',
             },
             nav: {
                 backStore: 'Back to store',

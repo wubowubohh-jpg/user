@@ -33,6 +33,16 @@
 
     <ResellerPageState v-if="loading" loading :title="t('resellerConsole.common.loading')" />
     <ResellerPageState
+      v-else-if="error"
+      :title="t('resellerConsole.common.loadFailed')"
+      :description="error !== 'error' ? error : undefined"
+      :icon="AlertTriangle"
+    >
+      <Button type="button" variant="outline" size="sm" @click="reload">
+        {{ t('resellerConsole.common.retry') }}
+      </Button>
+    </ResellerPageState>
+    <ResellerPageState
       v-else-if="rows.length === 0 && hasActiveFilter"
       :title="t('resellerConsole.common.noFilterResult')"
       :icon="ShoppingBag"
@@ -129,7 +139,7 @@
 import { computed, onMounted, reactive } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
-import { Banknote, CheckCircle2, ChevronRight, ShoppingBag } from 'lucide-vue-next'
+import { AlertTriangle, Banknote, CheckCircle2, ChevronRight, ShoppingBag } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -153,7 +163,7 @@ import {
 
 const { t, te } = useI18n()
 const router = useRouter()
-const { loading, rows, stats, pagination, load, loadStats } = useResellerOrders()
+const { loading, error, rows, stats, pagination, load, loadStats } = useResellerOrders()
 const filters = reactive({ order_no: '', status: 'all', created_from: '', created_to: '' })
 
 const statusOptions = ['pending_payment', 'paid', 'completed', 'partially_refunded', 'refunded', 'canceled']

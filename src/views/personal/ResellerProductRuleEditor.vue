@@ -3,9 +3,10 @@
     <div class="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
       <div class="min-w-0">
         <div class="truncate text-sm font-bold text-foreground">{{ label }}</div>
-        <div class="mt-1 flex flex-wrap gap-1.5">
+        <div class="mt-1 flex flex-wrap items-center gap-1.5">
           <Badge variant="neutral" size="xs">{{ t('personalCenter.reseller.productSettings.basePrice') }} {{ basePrice }}</Badge>
-          <Badge variant="accent" size="xs">{{ t('personalCenter.reseller.productSettings.effectivePrice') }} {{ effectivePrice || '-' }}</Badge>
+          <Badge :variant="invalid ? 'danger' : 'accent'" size="xs">{{ t('personalCenter.reseller.productSettings.effectivePrice') }} {{ effectivePrice || '-' }}</Badge>
+          <span v-if="invalid && errorHint" class="text-xs font-medium text-destructive">{{ errorHint }}</span>
         </div>
       </div>
       <label class="inline-flex items-center gap-2 text-sm text-foreground">
@@ -55,6 +56,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
@@ -66,6 +68,8 @@ const props = defineProps<{
   label: string
   basePrice: string
   effectivePrice?: string
+  invalid?: boolean
+  errorCode?: string
   modelValue: ResellerProductSettingPayloadItem
 }>()
 
@@ -74,6 +78,12 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+
+const errorHint = computed(() => {
+  if (!props.invalid) return ''
+  if (props.errorCode === 'markup_exceeded') return t('personalCenter.reseller.productSettings.markupExceededHint')
+  return t('personalCenter.reseller.productSettings.priceInvalidHint')
+})
 
 const updateValue = <K extends keyof ResellerProductSettingPayloadItem>(
   key: K,

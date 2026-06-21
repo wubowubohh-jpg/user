@@ -337,6 +337,19 @@ export interface ResellerProductSettingUpdatePayload {
     settings: ResellerProductSettingPayloadItem[]
 }
 
+export interface ResellerProductSettingPreviewItem {
+    sku_id: number
+    is_listed: boolean
+    base_price_amount: string
+    effective_price_amount: string
+    valid: boolean
+    error_code?: string
+}
+
+export interface ResellerProductSettingPreviewData {
+    items: ResellerProductSettingPreviewItem[]
+}
+
 export interface ResellerBalanceData {
     id: number
     currency: string

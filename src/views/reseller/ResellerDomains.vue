@@ -280,7 +280,9 @@ const submitDomain = async () => {
     await load()
     alert.value = { level: 'success', message: t('personalCenter.common.saveSuccess') }
   } catch (err) {
-    alert.value = { level: 'error', message: t('personalCenter.common.saveFailed') }
+    // 透传后端细分错误（域名格式无效 / 不能用主站域名 / 已被占用等）。
+    const message = err instanceof Error && err.message ? err.message : t('personalCenter.common.saveFailed')
+    alert.value = { level: 'error', message }
   } finally {
     submitting.value = false
   }

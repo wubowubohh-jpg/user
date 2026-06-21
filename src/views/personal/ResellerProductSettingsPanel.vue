@@ -93,7 +93,7 @@
                 <Badge variant="accent" size="xs">{{ t('personalCenter.reseller.productSettings.effectivePrice') }} {{ summarizeProductEffectivePrice(editing) }}</Badge>
               </div>
             </div>
-            <Button type="button" variant="outline" size="sm" @click="editing = null">
+            <Button type="button" variant="outline" size="sm" @click="closeEditor">
               {{ t('common.cancel') }}
             </Button>
           </div>
@@ -104,14 +104,18 @@
               v-model="productForm"
               :label="t('personalCenter.reseller.productSettings.productLevelRule')"
               :base-price="editing.product.price_amount"
-              :effective-price="summarizeEffectivePrice(editing.product_setting)"
+              :effective-price="previewEffectiveFor(0, summarizeEffectivePrice(editing.product_setting))"
+              :invalid="previewInvalidFor(0)"
+              :error-code="previewErrorFor(0)"
             />
             <div v-for="sku in editing.skus" :key="sku.id" class="rounded-xl border bg-card p-3">
               <ResellerProductRuleEditor
                 :model-value="skuFormFor(sku.id)"
                 :label="buildSkuLabel(sku)"
                 :base-price="sku.base_price_amount"
-                :effective-price="summarizeSkuEffectivePrice(sku)"
+                :effective-price="previewEffectiveFor(sku.id, summarizeSkuEffectivePrice(sku))"
+                :invalid="previewInvalidFor(sku.id)"
+                :error-code="previewErrorFor(sku.id)"
                 @update:model-value="updateSkuForm(sku.id, $event)"
               />
             </div>
@@ -144,13 +148,14 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onMounted, reactive, ref } from 'vue'
+import { nextTick, onMounted, reactive, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { resellerAPI } from '../../api/reseller'
 import type {
   ResellerProductSettingData,
   ResellerProductSettingDetailData,
   ResellerProductSettingPayloadItem,
+  ResellerProductSettingPreviewData,
   ResellerProductSettingProductData,
   ResellerProductSettingSKUData,
 } from '../../api/types'
@@ -188,6 +193,12 @@ const productForm = ref<ResellerProductSettingPayloadItem>(normalizeResellerProd
 const skuForms = reactive<Record<number, ResellerProductSettingPayloadItem>>({})
 const pagination = reactive({ page: 1, page_size: 20, total: 0, total_page: 1 })
 
+type PreviewEntry = { effective: string; valid: boolean; errorCode: string }
+// key 0 = 商品级规则，其余为 sku_id。生效价随编辑实时由后端预览接口刷新，与保存/下单口径一致。
+const previewByKey = reactive<Record<number, PreviewEntry>>({})
+let previewTimer: ReturnType<typeof setTimeout> | null = null
+let previewSeq = 0
+
 const filters = reactive({
   keyword: '',
 })
@@ -214,6 +225,22 @@ const formFromSetting = (
     sort_order: setting?.sort_order,
   })
 
+const clearPreview = () => {
+  Object.keys(previewByKey).forEach((key) => delete previewByKey[Number(key)])
+}
+
+// 用已保存的生效价先行填充预览，避免打开编辑器瞬间出现空值，随后由实时预览刷新。
+const seedPreviewFromDetail = (detail: ResellerProductSettingDetailData) => {
+  clearPreview()
+  if (detail.product_setting?.effective_price_amount) {
+    previewByKey[0] = { effective: detail.product_setting.effective_price_amount, valid: true, errorCode: '' }
+  }
+  detail.skus.forEach((sku) => {
+    const effective = sku.effective_price_amount || sku.setting?.effective_price_amount
+    if (effective) previewByKey[sku.id] = { effective, valid: true, errorCode: '' }
+  })
+}
+
 const applyDetailToEditor = (detail: ResellerProductSettingDetailData) => {
   productForm.value = formFromSetting(detail.product_setting, 0)
   clearSkuForms()
@@ -221,7 +248,55 @@ const applyDetailToEditor = (detail: ResellerProductSettingDetailData) => {
     skuForms[sku.id] = formFromSetting(sku.setting, sku.id)
   })
   editing.value = detail
+  seedPreviewFromDetail(detail)
+  schedulePreview()
 }
+
+const runPreview = async () => {
+  const current = editing.value
+  if (!current) return
+  const productID = current.product.id
+  const seq = ++previewSeq
+  try {
+    const payload = buildResellerProductSettingPayload([
+      productForm.value,
+      ...current.skus.map((sku) => skuFormFor(sku.id)),
+    ])
+    const response = await resellerAPI.previewProductSettings(productID, payload)
+    const data = unwrapData<ResellerProductSettingPreviewData>(response)
+    // 丢弃过期结果（编辑器已切换商品或有更新的请求在途）。
+    if (seq !== previewSeq || editing.value?.product.id !== productID) return
+    const next: Record<number, PreviewEntry> = {}
+    ;(data?.items || []).forEach((item) => {
+      next[item.sku_id] = {
+        effective: item.effective_price_amount,
+        valid: item.valid,
+        errorCode: item.error_code || '',
+      }
+    })
+    clearPreview()
+    Object.assign(previewByKey, next)
+  } catch {
+    // 预览失败静默：保留上次值；保存时后端仍会做权威校验。
+  }
+}
+
+const schedulePreview = () => {
+  if (previewTimer) clearTimeout(previewTimer)
+  previewTimer = setTimeout(runPreview, 350)
+}
+
+const previewEffectiveFor = (key: number, fallback: string) => previewByKey[key]?.effective || fallback
+const previewInvalidFor = (key: number) => previewByKey[key]?.valid === false
+const previewErrorFor = (key: number) => previewByKey[key]?.errorCode || ''
+
+watch(
+  () => [productForm.value, skuForms],
+  () => {
+    if (editing.value) schedulePreview()
+  },
+  { deep: true },
+)
 
 const scrollProductRowIntoView = async (productID: number) => {
   await nextTick()
@@ -268,6 +343,16 @@ const loadRows = async (page = pagination.page) => {
 
 const searchRows = () => loadRows(1)
 const goPage = (page: number) => loadRows(page)
+
+const closeEditor = () => {
+  if (previewTimer) {
+    clearTimeout(previewTimer)
+    previewTimer = null
+  }
+  previewSeq++
+  clearPreview()
+  editing.value = null
+}
 
 const openEditor = async (productID: number) => {
   detailLoading.value = true

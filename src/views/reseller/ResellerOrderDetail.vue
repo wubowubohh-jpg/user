@@ -16,6 +16,16 @@
     </ResellerSectionHeader>
 
     <ResellerPageState v-if="detailLoading" loading :title="t('resellerConsole.common.loading')" />
+    <ResellerPageState
+      v-else-if="detailError"
+      :title="t('resellerConsole.common.loadFailed')"
+      :description="detailError !== 'error' ? detailError : undefined"
+      :icon="AlertTriangle"
+    >
+      <Button type="button" variant="outline" size="sm" @click="reload">
+        {{ t('resellerConsole.common.retry') }}
+      </Button>
+    </ResellerPageState>
     <ResellerPageState v-else-if="!detail" :title="t('resellerConsole.orderDetail.notFound')" :icon="ShoppingBag" />
 
     <div v-else class="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -67,8 +77,8 @@
                 </TableCell>
                 <TableCell class="px-4 py-3 text-right font-mono text-xs">{{ item.quantity }}</TableCell>
                 <TableCell class="px-4 py-3 text-right font-mono text-xs">{{ formatResellerConsoleAmount(item.unit_price, detail.currency) }}</TableCell>
-                <TableCell class="px-4 py-3 text-right font-mono text-xs">{{ item.base_unit_amount || '-' }}</TableCell>
-                <TableCell class="px-4 py-3 text-right font-mono text-xs">{{ item.profit_amount || '-' }}</TableCell>
+                <TableCell class="px-4 py-3 text-right font-mono text-xs">{{ formatResellerConsoleAmount(item.base_unit_amount, detail.currency) }}</TableCell>
+                <TableCell class="px-4 py-3 text-right font-mono text-xs">{{ formatResellerConsoleAmount(item.profit_amount, detail.currency) }}</TableCell>
               </TableRow>
             </TableBody>
           </ResellerDataTable>
@@ -92,11 +102,11 @@
               </div>
               <div>
                 <dt class="text-muted-foreground">{{ t('resellerConsole.orderDetail.baseUnit') }}</dt>
-                <dd class="mt-0.5 font-mono text-foreground">{{ item.base_unit_amount || '-' }}</dd>
+                <dd class="mt-0.5 font-mono text-foreground">{{ formatResellerConsoleAmount(item.base_unit_amount, detail.currency) }}</dd>
               </div>
               <div>
                 <dt class="text-muted-foreground">{{ t('resellerConsole.orders.profitAmount') }}</dt>
-                <dd class="mt-0.5 font-mono text-foreground">{{ item.profit_amount || '-' }}</dd>
+                <dd class="mt-0.5 font-mono text-foreground">{{ formatResellerConsoleAmount(item.profit_amount, detail.currency) }}</dd>
               </div>
             </ResellerRecordCard>
           </div>
@@ -160,7 +170,7 @@
 import { computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
-import { ArrowLeft, Check, ShoppingBag } from 'lucide-vue-next'
+import { AlertTriangle, ArrowLeft, Check, ShoppingBag } from 'lucide-vue-next'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
 import { TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -182,8 +192,12 @@ import {
 
 const { t, te, locale } = useI18n()
 const route = useRoute()
-const { detailLoading, detail, loadDetail } = useResellerOrders()
+const { detailLoading, detailError, detail, loadDetail } = useResellerOrders()
 const orderNo = computed(() => String(route.params.order_no || ''))
+
+const reload = () => {
+  if (orderNo.value) void loadDetail(orderNo.value)
+}
 
 const statusLabel = (status?: string) => {
   if (!status) return '-'

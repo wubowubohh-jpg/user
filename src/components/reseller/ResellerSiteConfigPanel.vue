@@ -608,11 +608,12 @@ const handleSave = async () => {
         const response = await resellerAPI.updateSiteConfig(form)
         snapshot.value = { opened: true, can_edit: true, config: response.data.data }
         assignForm(response.data.data)
-        await appStore.loadConfig(true)
         alert.value = {
             level: 'success',
             message: t('personalCenter.reseller.siteConfig.saveSuccess'),
         }
+        // 全局配置刷新仅为同步展示，属尽力而为：刷新失败不得让已成功的保存被误判为失败。
+        await appStore.loadConfig(true).catch(() => {})
     } catch (err: any) {
         alert.value = {
             level: 'error',

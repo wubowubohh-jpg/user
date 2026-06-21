@@ -401,6 +401,10 @@ const loadSetupState = async () => {
     ])
     siteSnapshot.value = siteResponse.data.data || null
     configuredProductCount.value = Number(productResponse.data.pagination?.total || 0)
+  } catch {
+    // 引导清单为辅助信息，失败时静默降级，不阻塞工作台其它区段。
+    siteSnapshot.value = null
+    configuredProductCount.value = 0
   } finally {
     setupLoading.value = false
   }

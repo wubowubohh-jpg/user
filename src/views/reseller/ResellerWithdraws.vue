@@ -67,7 +67,15 @@
           <TableRow v-for="item in withdraws" :key="item.id">
             <TableCell class="px-4 py-3 text-right font-mono text-xs text-foreground">{{ formatResellerConsoleAmount(item.amount, item.currency) }}</TableCell>
             <TableCell class="px-4 py-3 text-xs text-foreground">{{ item.channel }}</TableCell>
-            <TableCell class="px-4 py-3"><ResellerStatusBadge :label="withdrawStatusLabel(item.status)" :tone="withdrawTone(item.status)" /></TableCell>
+            <TableCell class="px-4 py-3">
+              <ResellerStatusBadge :label="withdrawStatusLabel(item.status)" :tone="withdrawTone(item.status)" />
+              <span
+                v-if="item.status === RESELLER_WITHDRAW_STATUS_REJECTED && item.reject_reason"
+                class="mt-1 block max-w-[16rem] break-all text-xs text-destructive"
+              >
+                {{ t('personalCenter.reseller.withdrawTable.rejectReason') }}：{{ item.reject_reason }}
+              </span>
+            </TableCell>
             <TableCell class="px-4 py-3 text-xs text-muted-foreground">{{ formatResellerConsoleDate(item.created_at) }}</TableCell>
             <TableCell class="px-4 py-3 text-xs text-muted-foreground">{{ formatResellerConsoleDate(item.processed_at) }}</TableCell>
           </TableRow>
@@ -84,6 +92,10 @@
           <div class="col-span-2">
             <dt class="text-muted-foreground">{{ t('personalCenter.reseller.withdrawTable.channel') }}</dt>
             <dd class="mt-0.5 break-all text-foreground">{{ item.channel }}</dd>
+          </div>
+          <div v-if="item.status === RESELLER_WITHDRAW_STATUS_REJECTED && item.reject_reason" class="col-span-2">
+            <dt class="text-muted-foreground">{{ t('personalCenter.reseller.withdrawTable.rejectReason') }}</dt>
+            <dd class="mt-0.5 break-all text-destructive">{{ item.reject_reason }}</dd>
           </div>
           <div>
             <dt class="text-muted-foreground">{{ t('personalCenter.reseller.withdrawTable.createdAt') }}</dt>
