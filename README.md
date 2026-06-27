@@ -1,6 +1,6 @@
-# Dujiao-Next User Web
+# 独角兽商城用户端
 
-Dujiao-Next User Web is the customer-facing frontend for browsing products, placing orders, and completing payments.
+Unicorn Store User Web is the customer-facing frontend for browsing products, placing orders, and completing payments.
 
 ## Tech Stack
 
